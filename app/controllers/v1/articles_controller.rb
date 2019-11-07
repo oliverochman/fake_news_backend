@@ -12,18 +12,21 @@ class V1::ArticlesController < ApplicationController
   end
 
   def show
-    if Article.exists?(id: params[:id])
-      article = Article.find(params[:id])
-      render json: article, serializer: Articles::IndexSerializer
+    if current_user.role == 'subscriber'
+      if Article.exists?(id: params[:id])
+        article = Article.find(params[:id])
+        render json: article, serializer: Articles::IndexSerializer
+      else
+        render_error_message("Unavailable content", 401)
+      end
     else
-      render_error_message("Unavailable content", 401)
+      render_error_message('You need to become a subscriber to view this article', 401)
     end
   end
 
   def create
     authorize Article.create
     article = Article.create(article_params.merge!(journalist: current_user))
-    
     
     if article.persisted? && attach_image(article)
       render json: { message: 'Article was successfully created' }
